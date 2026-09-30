@@ -1,0 +1,39 @@
+{
+  "name": "opencode-tui-call-status",
+  "version": "0.1.0",
+  "description": "Live model-call status line for the OpenCode V2 TUI prompt footer: current action, elapsed time, tokens, context usage and cost",
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "opencode-tui",
+    "tui",
+    "statusline",
+    "status-line",
+    "tokens",
+    "cost"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "./tui.js",
+  "exports": {
+    "./tui": "./tui.js"
+  },
+  "files": [
+    "tui.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  },
+  "dependencies": {
+    "@opentui/solid": "^0.5.12",
+    "solid-js": "^1.9.12"
+  },
+  "devDependencies": {
+    "@opencode/plugin": "^2.0.20"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
