@@ -46,7 +46,7 @@ npm install opencode-tui-call-status
 ### 从源码安装
 
 ```bash
-git clone https://github.com/<你的用户名>/opencode-tui-call-status
+git clone https://github.com/bibov2795/opencode-tui-call-status.git
 cd opencode-tui-call-status
 npm install
 ```

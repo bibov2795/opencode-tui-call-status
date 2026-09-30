@@ -43,7 +43,7 @@ Config file locations:
 ### Installing from source
 
 ```bash
-git clone https://github.com/<you>/opencode-tui-call-status
+git clone https://github.com/bibov2795/opencode-tui-call-status.git
 cd opencode-tui-call-status
 npm install
 ```

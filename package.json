@@ -13,7 +13,16 @@
     "cost"
   ],
   "license": "MIT",
+  "author": "bibov2795",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bibov2795/opencode-tui-call-status.git"
+  },
+  "homepage": "https://github.com/bibov2795/opencode-tui-call-status#readme",
+  "bugs": {
+    "url": "https://github.com/bibov2795/opencode-tui-call-status/issues"
+  },
   "main": "./tui.js",
   "exports": {
     "./tui": "./tui.js"
