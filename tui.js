@@ -62,18 +62,36 @@ const LABELS = {
   },
 }
 
-export function detectLang() {
-  const forced = (process.env.OPENCODE_CALL_STATUS_LANG || "").toLowerCase()
-  if (forced === "zh" || forced === "cn") return "zh"
-  if (forced === "en") return "en"
-  const loc = [process.env.LC_ALL, process.env.LC_MESSAGES, process.env.LANG]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase()
-  return /(^|[_\-.])(zh|cn|chs|cht)([_\-.]|$)/.test(loc) ? "zh" : "en"
+const ZH_RE = /(^|[_\-])(zh|cn|chs|cht)([_\-]|$)/
+
+/**
+ * Windows 兜底：PowerShell 根本不设 LANG / LC_ALL，此时退回系统区域。
+ * 注意 Intl 反映的是**区域格式**而非 UI 语言，两者不一致时以 env 为准，
+ * 所以只在 POSIX 变量缺失时才用这里。
+ */
+function systemLocale() {
+  if (process.platform !== "win32") return ""
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().locale || ""
+  } catch {
+    return ""
+  }
 }
 
-const L = LABELS[detectLang()]
+/** 判定状态文案语言：显式环境变量 > POSIX locale > 系统区域 > en */
+export function resolveLang() {
+  const forced = (process.env.OPENCODE_CALL_STATUS_LANG || "").toLowerCase()
+  if (forced) return forced === "zh" || forced === "cn" ? "zh" : "en"
+  // POSIX 优先级：LC_ALL > LC_MESSAGES > LANG，且 C / POSIX 视作未设置
+  const posix = [process.env.LC_ALL, process.env.LC_MESSAGES, process.env.LANG]
+    .filter(Boolean)
+    .map((v) => v.split(".")[0])   // 去掉 .UTF-8 之类后缀
+    .find((v) => v && v !== "C" && v !== "POSIX")
+  if (posix) return ZH_RE.test(posix.toLowerCase()) ? "zh" : "en"
+  return ZH_RE.test(systemLocale().toLowerCase()) ? "zh" : "en"
+}
+
+const L = LABELS[resolveLang()]
 
 // ── 装载探针（排障用）────────────────────────────────────────
 // 设 OPENCODE_CALL_STATUS_DEBUG=1 启用，用来区分三种失败：

@@ -15,7 +15,7 @@
  */
 process.env.OPENCODE_CALL_STATUS_LANG = "zh"
 
-const { compute, fmtTokens, fmtDur, fmtCost, totalTokens, toolTitle, modelLimit, currentModel, activeSessionID, detectLang } =
+const { compute, fmtTokens, fmtDur, fmtCost, totalTokens, toolTitle, modelLimit, currentModel, activeSessionID, resolveLang } =
   await import("../tui.js")
 
 let pass = 0
@@ -224,37 +224,56 @@ check("数据层抛异常不崩", compute(broken, "s", NOW).label === "就绪")
 
 // ══════════════════════ F. 语言检测 ══════════════════════
 console.log("\n=== F. 语言检测 ===")
-const savedLang = process.env.OPENCODE_CALL_STATUS_LANG
-const savedLC = process.env.LC_ALL
-const savedL = process.env.LANG
+const saved = {
+  OPENCODE_CALL_STATUS_LANG: process.env.OPENCODE_CALL_STATUS_LANG,
+  LC_ALL: process.env.LC_ALL,
+  LC_MESSAGES: process.env.LC_MESSAGES,
+  LANG: process.env.LANG,
+}
+// 清空所有 POSIX 变量，模拟「Windows PowerShell 里什么都没设」的默认情形
 delete process.env.LC_ALL
-
-process.env.OPENCODE_CALL_STATUS_LANG = "en"
-check("强制 en", detectLang() === "en")
-process.env.OPENCODE_CALL_STATUS_LANG = "zh"
-check("强制 zh", detectLang() === "zh")
-process.env.OPENCODE_CALL_STATUS_LANG = "cn"
-check("强制 cn 归一到 zh", detectLang() === "zh")
-
-delete process.env.OPENCODE_CALL_STATUS_LANG
-process.env.LANG = "zh_CN.UTF-8"
-check("系统语言 zh_CN → zh", detectLang() === "zh")
-process.env.LANG = "zh_TW.UTF-8"
-check("系统语言 zh_TW → zh", detectLang() === "zh")
-process.env.LANG = "en_US.UTF-8"
-check("系统语言 en_US → en", detectLang() === "en")
-process.env.LANG = "de_DE.UTF-8"
-check("系统语言 de_DE → en", detectLang() === "en")
+delete process.env.LC_MESSAGES
 delete process.env.LANG
-check("无语言变量 → en", detectLang() === "en")
+
+const setLang = (v) => {
+  if (v === undefined) delete process.env.OPENCODE_CALL_STATUS_LANG
+  else process.env.OPENCODE_CALL_STATUS_LANG = v
+}
+
+setLang("en")
+check("强制 en", resolveLang() === "en")
+setLang("zh")
+check("强制 zh", resolveLang() === "zh")
+setLang("cn")
+check("强制 cn 归一到 zh", resolveLang() === "zh")
+setLang("fr")
+check("未知语言码归一到 en", resolveLang() === "en")
+
+setLang(undefined)
+const ZH_RE = /(^|[_\-])(zh|cn|chs|cht)([_\-]|$)/
+const sysLoc = Intl.DateTimeFormat().resolvedOptions().locale || ""
+const expectFallback = ZH_RE.test(sysLoc.toLowerCase()) ? "zh" : "en"
+check(`env 全空时跟随系统区域 (${sysLoc || "无"})`, resolveLang() === expectFallback, `期望 ${expectFallback}`)
+
+process.env.LANG = "zh_CN.UTF-8"
+check("LANG=zh_CN.UTF-8 → zh", resolveLang() === "zh")
+process.env.LANG = "zh_TW"
+check("LANG=zh_TW（无编码后缀）→ zh", resolveLang() === "zh")
+process.env.LANG = "en_US.UTF-8"
+check("LANG=en_US.UTF-8 → en", resolveLang() === "en")
+process.env.LANG = "de_DE.UTF-8"
+check("LANG=de_DE.UTF-8 → en", resolveLang() === "en")
+process.env.LANG = "C"
+check("LANG=C 视作未设置 → 回退到系统区域", resolveLang() === expectFallback)
+process.env.LC_ALL = "zh_CN.UTF-8"
+process.env.LANG = "en_US.UTF-8"
+check("LC_ALL 覆盖 LANG → zh", resolveLang() === "zh")
 
 // 还原环境，避免影响后续断言
-if (savedLang === undefined) delete process.env.OPENCODE_CALL_STATUS_LANG
-else process.env.OPENCODE_CALL_STATUS_LANG = savedLang
-if (savedLC === undefined) delete process.env.LC_ALL
-else process.env.LC_ALL = savedLC
-if (savedL === undefined) delete process.env.LANG
-else process.env.LANG = savedL
+for (const k of ["OPENCODE_CALL_STATUS_LANG", "LC_ALL", "LC_MESSAGES", "LANG"]) {
+  if (saved[k] === undefined) delete process.env[k]
+  else process.env[k] = saved[k]
+}
 
 console.log(`\n=== 结果: ${pass} 通过, ${fail} 失败 ===`)
 process.exit(fail ? 1 : 0)
